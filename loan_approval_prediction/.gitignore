@@ -1,3 +1,4 @@
+.loan/
 .venv/
 __pycache__/
 *.pyc

@@ -1,116 +1,404 @@
-#Import libraries
-import pandas as pd
+import os
 import joblib
+import pandas as pd
 
 from sklearn.model_selection import train_test_split
 from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.impute import SimpleImputer
-from sklearn.pipeline import Pipeline
 from sklearn.metrics import accuracy_score, classification_report
 
 from xgboost import XGBClassifier
 
-# Load the dataset
-df = pd.read_csv("training.csv")
 
-print("Dataset loaded successfully!")
-print("Shape:", df.shape)
-print(df.head())
+# ============================================================
+# SETTINGS
+# ============================================================
 
-# Remove Loan_ID because it does not help predict loan approval
+DATA_FILE = "training.csv"
+
+MODEL_FOLDER = "model"
+
+MODEL_FILE = os.path.join(
+    MODEL_FOLDER,
+    "xgboost_model.pkl"
+)
+
+PREPROCESSOR_FILE = os.path.join(
+    MODEL_FOLDER,
+    "preprocessor.pkl"
+)
+
+
+# ============================================================
+# CREATE MODEL FOLDER
+# ============================================================
+
+os.makedirs(
+    MODEL_FOLDER,
+    exist_ok=True
+)
+
+
+# ============================================================
+# LOAD DATASET
+# ============================================================
+
+print("\nLoading dataset...")
+
+df = pd.read_csv(DATA_FILE)
+
+print(
+    f"Dataset loaded successfully: {df.shape}"
+)
+
+print("\nColumns:")
+print(df.columns.tolist())
+
+
+# ============================================================
+# REMOVE LOAN ID
+# ============================================================
+
 if "Loan_ID" in df.columns:
-    df = df.drop("Loan_ID", axis=1)
 
-# Separate input features and target
-X = df.drop("Loan_Status", axis=1)
-y = df["Loan_Status"]
+    df = df.drop(
+        "Loan_ID",
+        axis=1
+    )
 
-# Convert target to 0/1
-y = y.map({"Y": 1, "N": 0})
 
-# Identify columns
-categorical_columns = [
-    "Gender",
-    "Married",
-    "Dependents",
-    "Education",
-    "Self_Employed",
-    "Property_Area"
-]
+# ============================================================
+# TARGET COLUMN
+# ============================================================
 
-numerical_columns = [
-    "ApplicantIncome",
-    "CoapplicantIncome",
-    "LoanAmount",
-    "Loan_Amount_Term",
-    "Credit_History"
-]
-# Create preprocessing pipelines
+target_column = "Loan_Status"
 
-# Numerical preprocessing
-numerical_pipeline = Pipeline([
-    ("imputer", SimpleImputer(strategy="median"))
-])
+if target_column not in df.columns:
 
-# Categorical preprocessing
-categorical_pipeline = Pipeline([
-    ("imputer", SimpleImputer(strategy="most_frequent")),
-    ("encoder", OneHotEncoder(handle_unknown="ignore"))
-])
+    raise ValueError(
+        f"'{target_column}' column was not found "
+        "in the dataset."
+    )
 
-# Combine preprocessing
 
-preprocessor = ColumnTransformer([
-    ("num", numerical_pipeline, numerical_columns),
-    ("cat", categorical_pipeline, categorical_columns)
-])
+# ============================================================
+# SEPARATE FEATURES AND TARGET
+# ============================================================
 
-# Split the data
+X = df.drop(
+    target_column,
+    axis=1
+)
+
+y = df[target_column].copy()
+
+
+# ============================================================
+# CLEAN TARGET
+# ============================================================
+
+# Convert Y/N to 1/0 if necessary
+# ============================================================
+# CLEAN TARGET
+# ============================================================
+
+# Convert Loan_Status values safely to strings first.
+# Dataset values are usually Y and N.
+
+y = (
+    y.astype(str)
+    .str.strip()
+    .str.upper()
+)
+
+# Convert Y/N into 1/0
+
+y = y.map({
+    "Y": 1,
+    "N": 0
+})
+
+# Check for unexpected values
+
+if y.isna().any():
+
+    print("\nUnexpected Loan_Status values found:")
+
+    print(
+        df.loc[
+            y.isna(),
+            target_column
+        ].unique()
+    )
+
+    raise ValueError(
+        "Loan_Status contains values other than Y/N."
+    )
+
+# Convert to integer only AFTER Y/N mapping
+
+y = y.astype(int)
+
+# Remove rows where target could not be converted
+
+valid_rows = y.notna()
+
+X = X.loc[
+    valid_rows
+].reset_index(drop=True)
+
+y = y.loc[
+    valid_rows
+].astype(int).reset_index(drop=True)
+
+
+# ============================================================
+# IDENTIFY COLUMN TYPES
+# ============================================================
+
+categorical_columns = X.select_dtypes(
+    include=["object"]
+).columns.tolist()
+
+numeric_columns = X.select_dtypes(
+    include=["int64", "float64", "int32", "float32"]
+).columns.tolist()
+
+
+print("\nCategorical columns:")
+print(categorical_columns)
+
+print("\nNumerical columns:")
+print(numeric_columns)
+
+
+# ============================================================
+# NUMERICAL PIPELINE
+# ============================================================
+
+numeric_pipeline = Pipeline(
+    steps=[
+
+        (
+            "imputer",
+            SimpleImputer(
+                strategy="median"
+            )
+        )
+
+    ]
+)
+
+
+# ============================================================
+# CATEGORICAL PIPELINE
+# ============================================================
+
+categorical_pipeline = Pipeline(
+    steps=[
+
+        (
+            "imputer",
+            SimpleImputer(
+                strategy="most_frequent"
+            )
+        ),
+
+        (
+            "encoder",
+            OneHotEncoder(
+                handle_unknown="ignore",
+                sparse_output=False
+            )
+        )
+
+    ]
+)
+
+
+# ============================================================
+# PREPROCESSOR
+# ============================================================
+
+preprocessor = ColumnTransformer(
+    transformers=[
+
+        (
+            "numeric",
+            numeric_pipeline,
+            numeric_columns
+        ),
+
+        (
+            "categorical",
+            categorical_pipeline,
+            categorical_columns
+        )
+
+    ]
+)
+
+
+# ============================================================
+# TRAIN / TEST SPLIT
+# ============================================================
+
 X_train, X_test, y_train, y_test = train_test_split(
+
     X,
     y,
-    test_size=0.2,
+
+    test_size=0.20,
+
     random_state=42,
+
     stratify=y
+
 )
 
-print("Training data:", X_train.shape)
-print("Testing data:", X_test.shape)
 
-# Preprocess the data
-X_train_processed = preprocessor.fit_transform(X_train)
-X_test_processed = preprocessor.transform(X_test)
+print("\nTraining data:")
+print(X_train.shape)
 
-# Train XGBoost
+print("\nTesting data:")
+print(X_test.shape)
+
+
+# ============================================================
+# PREPROCESS TRAINING DATA
+# ============================================================
+
+print("\nPreprocessing data...")
+
+X_train_processed = preprocessor.fit_transform(
+    X_train
+)
+
+X_test_processed = preprocessor.transform(
+    X_test
+)
+
+
+# ============================================================
+# XGBOOST MODEL
+# ============================================================
+
+print("\nTraining XGBoost model...")
+
 model = XGBClassifier(
+
     n_estimators=200,
+
     max_depth=4,
+
     learning_rate=0.05,
+
     subsample=0.8,
+
     colsample_bytree=0.8,
+
+    objective="binary:logistic",
+
+    eval_metric="logloss",
+
     random_state=42,
-    eval_metric="logloss"
+
+    n_jobs=-1
+
 )
 
-model.fit(X_train_processed, y_train)
 
-# Evaluate the model
-y_pred = model.predict(X_test_processed)
+# ============================================================
+# TRAIN MODEL
+# ============================================================
 
-accuracy = accuracy_score(y_test, y_pred)
+model.fit(
+    X_train_processed,
+    y_train
+)
 
-print("\nModel Evaluation")
-print("----------------")
-print(f"Accuracy: {accuracy * 100:.2f}%")
+
+# ============================================================
+# PREDICTION
+# ============================================================
+
+y_pred = model.predict(
+    X_test_processed
+)
+
+
+# ============================================================
+# EVALUATION
+# ============================================================
+
+accuracy = accuracy_score(
+    y_test,
+    y_pred
+)
+
+
+print("\n" + "=" * 50)
+
+print(
+    f"MODEL ACCURACY: {accuracy * 100:.2f}%"
+)
+
+print("=" * 50)
 
 print("\nClassification Report:")
-print(classification_report(y_test, y_pred))
 
-#Save the model
-joblib.dump(model, "xgboost_model.pkl")
-joblib.dump(preprocessor, "preprocessor.pkl")
+print(
+    classification_report(
+        y_test,
+        y_pred
+    )
+)
 
-print("\nModel saved successfully!")
-print("Created: xgboost_model.pkl")
-print("Created: preprocessor.pkl")
+
+# ============================================================
+# SAVE MODEL
+# ============================================================
+
+joblib.dump(
+    model,
+    MODEL_FILE
+)
+
+
+# ============================================================
+# SAVE PREPROCESSOR
+# ============================================================
+
+joblib.dump(
+    preprocessor,
+    PREPROCESSOR_FILE
+)
+
+
+# ============================================================
+# SUCCESS MESSAGE
+# ============================================================
+
+print("\n" + "=" * 50)
+
+print("MODEL FILES CREATED SUCCESSFULLY!")
+
+print("=" * 50)
+
+print(
+    f"\nXGBoost model:"
+    f"\n{MODEL_FILE}"
+)
+
+print(
+    f"\nPreprocessor:"
+    f"\n{PREPROCESSOR_FILE}"
+)
+
+print("\nYou can now run:")
+
+print(
+    "\npython -m streamlit run app.py"
+)
