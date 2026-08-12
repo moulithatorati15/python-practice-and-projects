@@ -144,16 +144,37 @@ st.markdown(
 # LOAD MODEL AND PREPROCESSOR
 # ============================================================
 
+# ============================================================
+# LOAD MODEL AND PREPROCESSOR
+# ============================================================
+
+import os
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+MODEL_FILE = os.path.join(
+    BASE_DIR,
+    "model",
+    "xgboost_model.pkl"
+)
+
+PREPROCESSOR_FILE = os.path.join(
+    BASE_DIR,
+    "model",
+    "preprocessor.pkl"
+)
+
 try:
-    model = joblib.load("model/xgboost_model.pkl")
-    preprocessor = joblib.load("model/preprocessor.pkl")
+    model = joblib.load(MODEL_FILE)
+    preprocessor = joblib.load(PREPROCESSOR_FILE)
+
     model_loaded = True
 
 except Exception as e:
     model_loaded = False
+
     st.error("❌ Unable to load the model files.")
     st.code(str(e))
-
 
 # ============================================================
 # SESSION STATE
