@@ -13,37 +13,39 @@ from xgboost import XGBClassifier
 
 
 # ============================================================
-# SETTINGS
+# BASE DIRECTORY
 # ============================================================
 
-DATA_FILE = "training.csv"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-MODEL_FOLDER = "model"
+
+# ============================================================
+# FILE PATHS
+# ============================================================
+
+DATA_FILE = os.path.join(
+    BASE_DIR,
+    "training.csv"
+)
 
 MODEL_FILE = os.path.join(
-    MODEL_FOLDER,
+    BASE_DIR,
     "xgboost_model.pkl"
 )
 
 PREPROCESSOR_FILE = os.path.join(
-    MODEL_FOLDER,
+    BASE_DIR,
     "preprocessor.pkl"
-)
-
-
-# ============================================================
-# CREATE MODEL FOLDER
-# ============================================================
-
-os.makedirs(
-    MODEL_FOLDER,
-    exist_ok=True
 )
 
 
 # ============================================================
 # LOAD DATASET
 # ============================================================
+
+print("\n" + "=" * 60)
+print("LOAN APPROVAL PREDICTION - MODEL TRAINING")
+print("=" * 60)
 
 print("\nLoading dataset...")
 
@@ -67,6 +69,8 @@ if "Loan_ID" in df.columns:
         "Loan_ID",
         axis=1
     )
+
+    print("\nLoan_ID column removed.")
 
 
 # ============================================================
@@ -99,13 +103,7 @@ y = df[target_column].copy()
 # CLEAN TARGET
 # ============================================================
 
-# Convert Y/N to 1/0 if necessary
-# ============================================================
-# CLEAN TARGET
-# ============================================================
-
-# Convert Loan_Status values safely to strings first.
-# Dataset values are usually Y and N.
+print("\nCleaning target column...")
 
 y = (
     y.astype(str)
@@ -113,18 +111,26 @@ y = (
     .str.upper()
 )
 
-# Convert Y/N into 1/0
+
+# ============================================================
+# CONVERT Y/N TO 1/0
+# ============================================================
 
 y = y.map({
     "Y": 1,
     "N": 0
 })
 
-# Check for unexpected values
+
+# ============================================================
+# CHECK FOR INVALID VALUES
+# ============================================================
 
 if y.isna().any():
 
-    print("\nUnexpected Loan_Status values found:")
+    print(
+        "\nUnexpected Loan_Status values found:"
+    )
 
     print(
         df.loc[
@@ -137,21 +143,12 @@ if y.isna().any():
         "Loan_Status contains values other than Y/N."
     )
 
-# Convert to integer only AFTER Y/N mapping
+
+# ============================================================
+# CONVERT TARGET TO INTEGER
+# ============================================================
 
 y = y.astype(int)
-
-# Remove rows where target could not be converted
-
-valid_rows = y.notna()
-
-X = X.loc[
-    valid_rows
-].reset_index(drop=True)
-
-y = y.loc[
-    valid_rows
-].astype(int).reset_index(drop=True)
 
 
 # ============================================================
@@ -163,7 +160,12 @@ categorical_columns = X.select_dtypes(
 ).columns.tolist()
 
 numeric_columns = X.select_dtypes(
-    include=["int64", "float64", "int32", "float32"]
+    include=[
+        "int64",
+        "float64",
+        "int32",
+        "float32"
+    ]
 ).columns.tolist()
 
 
@@ -180,14 +182,12 @@ print(numeric_columns)
 
 numeric_pipeline = Pipeline(
     steps=[
-
         (
             "imputer",
             SimpleImputer(
                 strategy="median"
             )
         )
-
     ]
 )
 
@@ -198,7 +198,6 @@ numeric_pipeline = Pipeline(
 
 categorical_pipeline = Pipeline(
     steps=[
-
         (
             "imputer",
             SimpleImputer(
@@ -213,7 +212,6 @@ categorical_pipeline = Pipeline(
                 sparse_output=False
             )
         )
-
     ]
 )
 
@@ -224,7 +222,6 @@ categorical_pipeline = Pipeline(
 
 preprocessor = ColumnTransformer(
     transformers=[
-
         (
             "numeric",
             numeric_pipeline,
@@ -236,7 +233,6 @@ preprocessor = ColumnTransformer(
             categorical_pipeline,
             categorical_columns
         )
-
     ]
 )
 
@@ -255,7 +251,6 @@ X_train, X_test, y_train, y_test = train_test_split(
     random_state=42,
 
     stratify=y
-
 )
 
 
@@ -267,7 +262,7 @@ print(X_test.shape)
 
 
 # ============================================================
-# PREPROCESS TRAINING DATA
+# PREPROCESS DATA
 # ============================================================
 
 print("\nPreprocessing data...")
@@ -281,11 +276,23 @@ X_test_processed = preprocessor.transform(
 )
 
 
+print(
+    "\nProcessed training shape:",
+    X_train_processed.shape
+)
+
+print(
+    "Processed testing shape:",
+    X_test_processed.shape
+)
+
+
 # ============================================================
 # XGBOOST MODEL
 # ============================================================
 
 print("\nTraining XGBoost model...")
+
 
 model = XGBClassifier(
 
@@ -306,7 +313,6 @@ model = XGBClassifier(
     random_state=42,
 
     n_jobs=-1
-
 )
 
 
@@ -339,13 +345,14 @@ accuracy = accuracy_score(
 )
 
 
-print("\n" + "=" * 50)
+print("\n" + "=" * 60)
 
 print(
     f"MODEL ACCURACY: {accuracy * 100:.2f}%"
 )
 
-print("=" * 50)
+print("=" * 60)
+
 
 print("\nClassification Report:")
 
@@ -361,6 +368,8 @@ print(
 # SAVE MODEL
 # ============================================================
 
+print("\nSaving XGBoost model...")
+
 joblib.dump(
     model,
     MODEL_FILE
@@ -371,6 +380,8 @@ joblib.dump(
 # SAVE PREPROCESSOR
 # ============================================================
 
+print("Saving preprocessor...")
+
 joblib.dump(
     preprocessor,
     PREPROCESSOR_FILE
@@ -378,14 +389,14 @@ joblib.dump(
 
 
 # ============================================================
-# SUCCESS MESSAGE
+# SUCCESS
 # ============================================================
 
-print("\n" + "=" * 50)
+print("\n" + "=" * 60)
 
 print("MODEL FILES CREATED SUCCESSFULLY!")
 
-print("=" * 50)
+print("=" * 60)
 
 print(
     f"\nXGBoost model:"
@@ -397,8 +408,14 @@ print(
     f"\n{PREPROCESSOR_FILE}"
 )
 
+print("\nFiles are saved directly inside:")
+
+print(BASE_DIR)
+
 print("\nYou can now run:")
 
 print(
-    "\npython -m streamlit run app.py"
+    "\nstreamlit run app.py"
 )
+
+print()
