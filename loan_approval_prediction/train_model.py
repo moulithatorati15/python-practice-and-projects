@@ -11,17 +11,7 @@ from sklearn.metrics import accuracy_score, classification_report
 
 from xgboost import XGBClassifier
 
-
-# ============================================================
-# BASE DIRECTORY
-# ============================================================
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-
-# ============================================================
-# FILE PATHS
-# ============================================================
 
 DATA_FILE = os.path.join(
     BASE_DIR,
@@ -38,11 +28,6 @@ PREPROCESSOR_FILE = os.path.join(
     "preprocessor.pkl"
 )
 
-
-# ============================================================
-# LOAD DATASET
-# ============================================================
-
 print("\n" + "=" * 60)
 print("LOAN APPROVAL PREDICTION - MODEL TRAINING")
 print("=" * 60)
@@ -58,10 +43,7 @@ print(
 print("\nColumns:")
 print(df.columns.tolist())
 
-
-# ============================================================
 # REMOVE LOAN ID
-# ============================================================
 
 if "Loan_ID" in df.columns:
 
@@ -72,10 +54,7 @@ if "Loan_ID" in df.columns:
 
     print("\nLoan_ID column removed.")
 
-
-# ============================================================
 # TARGET COLUMN
-# ============================================================
 
 target_column = "Loan_Status"
 
@@ -86,10 +65,7 @@ if target_column not in df.columns:
         "in the dataset."
     )
 
-
-# ============================================================
 # SEPARATE FEATURES AND TARGET
-# ============================================================
 
 X = df.drop(
     target_column,
@@ -98,10 +74,7 @@ X = df.drop(
 
 y = df[target_column].copy()
 
-
-# ============================================================
 # CLEAN TARGET
-# ============================================================
 
 print("\nCleaning target column...")
 
@@ -111,20 +84,14 @@ y = (
     .str.upper()
 )
 
-
-# ============================================================
 # CONVERT Y/N TO 1/0
-# ============================================================
 
 y = y.map({
     "Y": 1,
     "N": 0
 })
 
-
-# ============================================================
 # CHECK FOR INVALID VALUES
-# ============================================================
 
 if y.isna().any():
 
@@ -143,17 +110,11 @@ if y.isna().any():
         "Loan_Status contains values other than Y/N."
     )
 
-
-# ============================================================
 # CONVERT TARGET TO INTEGER
-# ============================================================
 
 y = y.astype(int)
 
-
-# ============================================================
 # IDENTIFY COLUMN TYPES
-# ============================================================
 
 categorical_columns = X.select_dtypes(
     include=["object"]
@@ -175,10 +136,7 @@ print(categorical_columns)
 print("\nNumerical columns:")
 print(numeric_columns)
 
-
-# ============================================================
 # NUMERICAL PIPELINE
-# ============================================================
 
 numeric_pipeline = Pipeline(
     steps=[
@@ -191,10 +149,7 @@ numeric_pipeline = Pipeline(
     ]
 )
 
-
-# ============================================================
 # CATEGORICAL PIPELINE
-# ============================================================
 
 categorical_pipeline = Pipeline(
     steps=[
@@ -215,10 +170,7 @@ categorical_pipeline = Pipeline(
     ]
 )
 
-
-# ============================================================
 # PREPROCESSOR
-# ============================================================
 
 preprocessor = ColumnTransformer(
     transformers=[
@@ -236,10 +188,7 @@ preprocessor = ColumnTransformer(
     ]
 )
 
-
-# ============================================================
 # TRAIN / TEST SPLIT
-# ============================================================
 
 X_train, X_test, y_train, y_test = train_test_split(
 
@@ -260,10 +209,7 @@ print(X_train.shape)
 print("\nTesting data:")
 print(X_test.shape)
 
-
-# ============================================================
 # PREPROCESS DATA
-# ============================================================
 
 print("\nPreprocessing data...")
 
@@ -286,10 +232,7 @@ print(
     X_test_processed.shape
 )
 
-
-# ============================================================
 # XGBOOST MODEL
-# ============================================================
 
 print("\nTraining XGBoost model...")
 
@@ -315,29 +258,20 @@ model = XGBClassifier(
     n_jobs=-1
 )
 
-
-# ============================================================
 # TRAIN MODEL
-# ============================================================
 
 model.fit(
     X_train_processed,
     y_train
 )
 
-
-# ============================================================
 # PREDICTION
-# ============================================================
 
 y_pred = model.predict(
     X_test_processed
 )
 
-
-# ============================================================
 # EVALUATION
-# ============================================================
 
 accuracy = accuracy_score(
     y_test,
@@ -363,10 +297,7 @@ print(
     )
 )
 
-
-# ============================================================
 # SAVE MODEL
-# ============================================================
 
 print("\nSaving XGBoost model...")
 
@@ -375,10 +306,7 @@ joblib.dump(
     MODEL_FILE
 )
 
-
-# ============================================================
 # SAVE PREPROCESSOR
-# ============================================================
 
 print("Saving preprocessor...")
 
@@ -387,10 +315,7 @@ joblib.dump(
     PREPROCESSOR_FILE
 )
 
-
-# ============================================================
 # SUCCESS
-# ============================================================
 
 print("\n" + "=" * 60)
 
