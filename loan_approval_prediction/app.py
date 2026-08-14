@@ -2,6 +2,7 @@ import os
 import joblib
 import pandas as pd
 import streamlit as st
+import plotly.graph_objects as go
 
 
 # ============================================================
@@ -9,11 +10,19 @@ import streamlit as st
 # ============================================================
 
 st.set_page_config(
-    page_title="Loan Approval Prediction",
+    page_title="Loan Approval Prediction - Moulitha",
     page_icon="🏦",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+
+
+# ============================================================
+# SESSION STATE
+# ============================================================
+
+if "prediction_history" not in st.session_state:
+    st.session_state.prediction_history = []
 
 
 # ============================================================
@@ -24,7 +33,10 @@ st.markdown(
     """
     <style>
 
-    /* Main background */
+    /* =====================================================
+       MAIN BACKGROUND
+       ===================================================== */
+
     .stApp {
         background:
             radial-gradient(
@@ -48,7 +60,10 @@ st.markdown(
     }
 
 
-    /* Hide Streamlit menu */
+    /* =====================================================
+       HIDE STREAMLIT MENU
+       ===================================================== */
+
     #MainMenu {
         visibility: hidden;
     }
@@ -58,7 +73,10 @@ st.markdown(
     }
 
 
-    /* Main container */
+    /* =====================================================
+       MAIN CONTAINER
+       ===================================================== */
+
     .block-container {
         padding-top: 2rem;
         padding-bottom: 3rem;
@@ -66,9 +84,12 @@ st.markdown(
     }
 
 
-    /* Headings */
+    /* =====================================================
+       STREAMLIT HEADINGS
+       ===================================================== */
+
     h1 {
-        font-size: 3.5rem !important;
+        font-size: 3.2rem !important;
         font-weight: 800 !important;
         color: white !important;
     }
@@ -80,23 +101,33 @@ st.markdown(
 
     h3 {
         color: white !important;
+        font-weight: 700 !important;
     }
 
 
-    /* Normal text */
+    /* =====================================================
+       NORMAL TEXT
+       ===================================================== */
+
     p {
         color: #dcecff;
     }
 
 
-    /* Input labels */
+    /* =====================================================
+       INPUT LABELS
+       ===================================================== */
+
     label {
         color: white !important;
         font-weight: 650 !important;
     }
 
 
-    /* Input boxes */
+    /* =====================================================
+       INPUT BOXES
+       ===================================================== */
+
     div[data-baseweb="select"] > div,
     div[data-baseweb="input"] > div,
     div[data-testid="stNumberInput"] > div {
@@ -105,7 +136,18 @@ st.markdown(
     }
 
 
-    /* Success box */
+    div[data-baseweb="select"] *,
+    div[data-baseweb="input"] input,
+    div[data-testid="stNumberInput"] input {
+        color: #000000 !important;
+        font-weight: 600 !important;
+    }
+
+
+    /* =====================================================
+       MODEL SUCCESS BOX
+       ===================================================== */
+
     .model-success {
         padding: 18px 22px;
         border-radius: 15px;
@@ -118,7 +160,10 @@ st.markdown(
     }
 
 
-    /* Prediction cards */
+    /* =====================================================
+       PREDICTION CARDS
+       ===================================================== */
+
     .approved-card {
         padding: 30px;
         border-radius: 20px;
@@ -153,7 +198,10 @@ st.markdown(
     }
 
 
-    /* Info section */
+    /* =====================================================
+       INFO SECTION
+       ===================================================== */
+
     .info-card {
         padding: 25px;
         border-radius: 18px;
@@ -164,7 +212,10 @@ st.markdown(
     }
 
 
-    /* Prediction flow */
+    /* =====================================================
+       FLOW BOX
+       ===================================================== */
+
     .flow-box {
         padding: 20px;
         margin-top: 15px;
@@ -179,18 +230,95 @@ st.markdown(
     }
 
 
-    /* Button */
+    /* =====================================================
+       PREDICTION SUMMARY
+       ===================================================== */
+
+    .summary-card {
+        padding: 22px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.045);
+        border: 1px solid rgba(120, 190, 255, 0.14);
+        margin-top: 20px;
+    }
+
+
+    .summary-title {
+        font-size: 22px;
+        font-weight: 800;
+        color: white;
+        margin-bottom: 15px;
+    }
+
+
+    .summary-item {
+        color: #dcecff;
+        font-size: 16px;
+        line-height: 1.9;
+    }
+
+
+    /* =====================================================
+       HISTORY CARD
+       ===================================================== */
+
+    .history-card {
+        padding: 20px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.045);
+        border: 1px solid rgba(120, 190, 255, 0.14);
+        margin-top: 15px;
+    }
+
+
+    /* =====================================================
+       PREDICT LOAN APPROVAL BUTTON
+       ===================================================== */
+
     .stButton > button {
         width: 100%;
         border-radius: 14px;
         padding: 14px;
+
         font-size: 18px;
-        font-weight: 750;
-        border: none;
+        font-weight: 800 !important;
+
+        color: #ffffff !important;
+        background-color: #071a2f !important;
+
+        border: 1px solid #16456d !important;
+
+        box-shadow:
+            0 6px 18px rgba(0, 0, 0, 0.35);
+
+        transition: all 0.25s ease;
     }
 
 
-    /* Floating particles */
+    .stButton > button:hover {
+        color: #ffffff !important;
+
+        background-color: #0b2948 !important;
+
+        border: 1px solid #19cfff !important;
+
+        box-shadow:
+            0 0 18px rgba(25, 207, 255, 0.25);
+
+        transform: translateY(-1px);
+    }
+
+
+    .stButton > button:active {
+        background-color: #041221 !important;
+        color: #ffffff !important;
+    }
+
+
+    /* =====================================================
+       FLOATING PARTICLES
+       ===================================================== */
+
     .particle {
         position: fixed;
         width: 4px;
@@ -279,7 +407,10 @@ st.markdown(
     }
 
 
-    /* Grid overlay */
+    /* =====================================================
+       GRID OVERLAY
+       ===================================================== */
+
     .grid-overlay {
         position: fixed;
         top: 0;
@@ -305,8 +436,6 @@ st.markdown(
 
     </style>
 
-
-    <!-- Background -->
     <div class="grid-overlay"></div>
 
     <div class="particle p1"></div>
@@ -345,6 +474,7 @@ PREPROCESSOR_FILE = os.path.join(
 
 model = None
 preprocessor = None
+model_loaded = False
 
 try:
 
@@ -356,38 +486,22 @@ try:
 
     model_loaded = True
 
-except Exception as e:
+except Exception:
 
     model_loaded = False
 
-    st.error(
-        "Unable to load the model files."
-    )
-
-    st.code(
-        str(e)
-    )
-
 
 # ============================================================
-# TITLE
+# TOP HEADING
 # ============================================================
 
-st.markdown(
-    """
-    <h1>🏦 Loan Approval Prediction</h1>
-    """,
-    unsafe_allow_html=True
+st.title(
+    "🏦 Loan Approval Prediction — Moulitha"
 )
 
-st.markdown(
-    """
-    <h3>
-    Enter applicant details below to predict whether
-    the loan is likely to be approved.
-    </h3>
-    """,
-    unsafe_allow_html=True
+st.write(
+    "Enter applicant details below to predict whether "
+    "the loan is likely to be approved."
 )
 
 
@@ -406,12 +520,22 @@ if model_loaded:
         unsafe_allow_html=True
     )
 
+else:
+
+    st.error(
+        "❌ Unable to load the model files. "
+        "Please check that xgboost_model.pkl and "
+        "preprocessor.pkl are in the same folder as app.py."
+    )
+
 
 # ============================================================
 # APPLICANT INFORMATION
 # ============================================================
 
-st.header("👤 Applicant Information")
+st.header(
+    "👤 Applicant Information"
+)
 
 
 col1, col2 = st.columns(2)
@@ -457,7 +581,9 @@ with col2:
 # FINANCIAL INFORMATION
 # ============================================================
 
-st.header("💰 Financial Information")
+st.header(
+    "💰 Financial Information"
+)
 
 
 col1, col2 = st.columns(2)
@@ -500,7 +626,8 @@ with col2:
         "Credit History",
         [1.0, 0.0],
         format_func=lambda x:
-        "Positive (1)" if x == 1.0
+        "Positive (1)"
+        if x == 1.0
         else "Negative (0)"
     )
 
@@ -532,10 +659,6 @@ if predict_button:
 
     else:
 
-        # ----------------------------------------------------
-        # CREATE INPUT DATAFRAME
-        # ----------------------------------------------------
-
         input_data = pd.DataFrame(
             {
                 "Gender": [gender],
@@ -553,11 +676,11 @@ if predict_button:
         )
 
 
-        # ----------------------------------------------------
-        # PREPROCESS INPUT
-        # ----------------------------------------------------
-
         try:
+
+            # ------------------------------------------------
+            # PREPROCESS INPUT
+            # ------------------------------------------------
 
             processed_data = preprocessor.transform(
                 input_data
@@ -574,7 +697,7 @@ if predict_button:
 
 
             # ------------------------------------------------
-            # PROBABILITY
+            # PREDICTION PROBABILITY
             # ------------------------------------------------
 
             probability = None
@@ -588,29 +711,132 @@ if predict_button:
                     processed_data
                 )[0]
 
-                probability = probabilities[
-                    int(prediction)
-                ] * 100
+
+                if hasattr(
+                    model,
+                    "classes_"
+                ):
+
+                    class_list = list(
+                        model.classes_
+                    )
+
+                    try:
+
+                        prediction_index = (
+                            class_list.index(
+                                prediction
+                            )
+                        )
+
+                    except ValueError:
+
+                        prediction_index = int(
+                            prediction
+                        )
+
+                else:
+
+                    prediction_index = int(
+                        prediction
+                    )
+
+
+                probability = (
+                    probabilities[
+                        prediction_index
+                    ] * 100
+                )
+
+
+            # ------------------------------------------------
+            # PREDICTION RESULT
+            # ------------------------------------------------
+
+            is_approved = (
+                str(prediction) == "1"
+                or str(prediction).upper() == "Y"
+            )
+
+
+            if is_approved:
+
+                result_text = "Loan Approved"
+
+                result_icon = "✅"
+
+                result_description = (
+                    "Based on the information provided, "
+                    "the model predicts that the loan is "
+                    "likely to be approved."
+                )
+
+            else:
+
+                result_text = "Loan Not Approved"
+
+                result_icon = "❌"
+
+                result_description = (
+                    "Based on the information provided, "
+                    "the model predicts that the loan is "
+                    "unlikely to be approved."
+                )
+
+
+            # ------------------------------------------------
+            # SAVE PREDICTION HISTORY
+            # ------------------------------------------------
+
+            history_record = {
+
+                "Result": result_text,
+
+                "Probability": (
+                    round(
+                        probability,
+                        2
+                    )
+                    if probability is not None
+                    else None
+                ),
+
+                "Education": education,
+
+                "Credit History": (
+                    "Positive"
+                    if credit_history == 1.0
+                    else "Negative"
+                ),
+
+                "Property Area": property_area,
+
+                "Loan Amount": loan_amount
+
+            }
+
+
+            st.session_state.prediction_history.append(
+                history_record
+            )
 
 
             # ------------------------------------------------
             # DISPLAY RESULT
             # ------------------------------------------------
 
-            if prediction == 1:
+            if is_approved:
 
                 st.markdown(
-                    """
+                    f"""
                     <div class="approved-card">
 
                     <div class="prediction-title">
-                    ✅ Loan Approved
+                    {result_icon} {result_text}
                     </div>
 
                     <div class="prediction-text">
-                    Based on the information provided,
-                    the model predicts that the loan is
-                    likely to be approved.
+                    {result_description}
                     </div>
 
                     </div>
@@ -621,17 +847,15 @@ if predict_button:
             else:
 
                 st.markdown(
-                    """
+                    f"""
                     <div class="rejected-card">
 
                     <div class="prediction-title">
-                    ❌ Loan Not Approved
+                    {result_icon} {result_text}
                     </div>
 
                     <div class="prediction-text">
-                    Based on the information provided,
-                    the model predicts that the loan is
-                    unlikely to be approved.
+                    {result_description}
                     </div>
 
                     </div>
@@ -641,15 +865,170 @@ if predict_button:
 
 
             # ------------------------------------------------
-            # PROBABILITY
+            # PROBABILITY GAUGE
             # ------------------------------------------------
 
             if probability is not None:
 
-                st.metric(
-                    "Prediction Confidence",
-                    f"{probability:.2f}%"
+                st.subheader(
+                    "📊 Prediction Probability"
                 )
+
+
+                gauge = go.Figure(
+                    go.Indicator(
+
+                        mode="gauge+number",
+
+                        value=probability,
+
+                        number={
+                            "suffix": "%",
+                            "font": {
+                                "size": 38,
+                                "color": "#000000"
+                            }
+                        },
+
+                        title={
+                            "text": "Model Confidence",
+                            "font": {
+                                "size": 20,
+                                "color": "#000000"
+                            }
+                        },
+
+                        gauge={
+
+                            "axis": {
+                                "range": [0, 100],
+                                "tickwidth": 1,
+                                "tickcolor": "#000000"
+                            },
+
+                            "bar": {
+                                "color": "#00B8D9"
+                            },
+
+                            "bgcolor":
+                                "rgba(255,255,255,0.80)",
+
+                            "borderwidth": 1,
+
+                            "bordercolor": "#FFFFFF",
+
+                            "steps": [
+
+                                {
+                                    "range": [0, 40],
+                                    "color": "#FFD6D6"
+                                },
+
+                                {
+                                    "range": [40, 70],
+                                    "color": "#FFF1C7"
+                                },
+
+                                {
+                                    "range": [70, 100],
+                                    "color": "#D7F5E8"
+                                }
+
+                            ]
+
+                        }
+
+                    )
+                )
+
+
+                gauge.update_layout(
+
+                    height=300,
+
+                    margin={
+                        "l": 30,
+                        "r": 30,
+                        "t": 70,
+                        "b": 20
+                    },
+
+                    paper_bgcolor=
+                        "rgba(255,255,255,0.75)",
+
+                    plot_bgcolor=
+                        "rgba(255,255,255,0.75)",
+
+                    font={
+                        "color": "#000000"
+                    }
+
+                )
+
+
+                st.plotly_chart(
+                    gauge,
+                    use_container_width=True
+                )
+
+
+            # ------------------------------------------------
+            # APPLICANT SUMMARY
+            # ------------------------------------------------
+
+            st.subheader(
+                "📋 Applicant Summary"
+            )
+
+
+            st.markdown(
+                f"""
+                <div class="summary-card">
+
+                <div class="summary-title">
+                Applicant Details Used for Prediction
+                </div>
+
+                <div class="summary-item">
+
+                <b>Gender:</b> {gender}<br>
+
+                <b>Married:</b> {married}<br>
+
+                <b>Dependents:</b> {dependents}<br>
+
+                <b>Education:</b> {education}<br>
+
+                <b>Self Employed:</b> {self_employed}<br>
+
+                <b>Applicant Income:</b>
+                {applicant_income:,.2f}<br>
+
+                <b>Coapplicant Income:</b>
+                {coapplicant_income:,.2f}<br>
+
+                <b>Loan Amount:</b>
+                {loan_amount:,.2f}<br>
+
+                <b>Loan Amount Term:</b>
+                {loan_amount_term:,.0f}<br>
+
+                <b>Credit History:</b>
+                {
+                    "Positive"
+                    if credit_history == 1.0
+                    else "Negative"
+                }<br>
+
+                <b>Property Area:</b>
+                {property_area}
+
+                </div>
+
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
 
         except Exception as e:
@@ -664,53 +1043,145 @@ if predict_button:
 
 
 # ============================================================
-# HOW THE PREDICTION WORKS
+# PREDICTION HISTORY
 # ============================================================
 
 st.markdown("---")
 
-st.header("🔍 How Loan Prediction Works")
+
+st.header(
+    "📋 Prediction History"
+)
+
+
+if len(
+    st.session_state.prediction_history
+) == 0:
+
+    st.info(
+        "No predictions have been made yet. "
+        "Enter applicant details and click "
+        "'Predict Loan Approval'."
+    )
+
+else:
+
+    history_df = pd.DataFrame(
+        st.session_state.prediction_history
+    )
+
+
+    history_df.index = range(
+        1,
+        len(history_df) + 1
+    )
+
+
+    history_df.index.name = (
+        "Prediction #"
+    )
+
+
+    st.dataframe(
+        history_df,
+        use_container_width=True
+    )
+
+
+    st.write(
+        f"Total predictions: "
+        f"**{len(st.session_state.prediction_history)}**"
+    )
+
+
+    clear_history = st.button(
+        "🗑️ Clear Prediction History"
+    )
+
+
+    if clear_history:
+
+        st.session_state.prediction_history = []
+
+        st.rerun()
+
+
+# ============================================================
+# HOW LOAN PREDICTION WORKS
+# ============================================================
+
+st.markdown("---")
+
+
+st.header(
+    "🔍 How Loan Prediction Works"
+)
 
 
 st.markdown(
     """
     <div class="info-card">
 
-    <p>**Loan Approval Prediction** is a machine learning application
-    that predicts whether a loan application is likely to be
-    **Approved or Not Approved**.
+    <b>Loan Approval Prediction</b> is a machine learning
+    application that predicts whether a loan application is
+    likely to be <b>Approved or Not Approved</b>.
 
-    I used a dataset containing **614 previous loan applications**.
-    The dataset includes information such as **Gender, Married status,
-    Dependents, Education, Self Employment, Applicant Income,
-    Coapplicant Income, Loan Amount, Loan Amount Term, Credit History,
-    and Property Area**.
+    <br><br>
 
-    I removed the **Loan ID** because it is only an identifier and
-    does not help the model make a prediction.
+    I used a dataset containing <b>614 previous loan
+    applications</b>. The dataset includes information such as
+    <b>Gender, Married status, Dependents, Education,
+    Self Employment, Applicant Income, Coapplicant Income,
+    Loan Amount, Loan Amount Term, Credit History,
+    and Property Area</b>.
 
-    I used **Loan Status** as the target variable. In the dataset,
-    `Y` represents an approved loan and `N` represents a rejected loan.
+    <br><br>
 
-    I divided the dataset into **80% training data and 20% testing data**.
-    I used the training data to teach the **XGBoost classifier** to
-    identify patterns between the applicant's details and previous
-    loan decisions.
+    I removed the <b>Loan ID</b> because it is only an identifier
+    and does not help the model make a prediction.
+
+    <br><br>
+
+    I used <b>Loan Status</b> as the target variable. In the
+    dataset, <b>Y</b> represents an approved loan and
+    <b>N</b> represents a rejected loan.
+
+    <br><br>
+
+    I divided the dataset into <b>80% training data and
+    20% testing data</b>. I used the training data to teach the
+    <b>XGBoost classifier</b> to identify patterns between the
+    applicant's details and previous loan decisions.
+
+    <br><br>
 
     When I enter a new applicant's details in this Streamlit
-    application, the model uses these details as input and predicts
-    whether the loan is likely to be **Approved or Not Approved**.
+    application, the model uses these details as input and
+    predicts whether the loan is likely to be
+    <b>Approved or Not Approved</b>.
 
-    **Important:** The **Loan Amount is not predicted by my model**.
-    It is entered by the applicant as an input. The model uses the
-    entered Loan Amount along with the applicant's other details to
-    predict the **Loan Status**.</p>
+    <br><br>
+
+    <b>Important:</b> The <b>Loan Amount is not predicted by
+    my model</b>. It is entered by the applicant as an input.
+    The model uses the entered Loan Amount along with the
+    applicant's other details to predict the
+    <b>Loan Status</b>.
 
     </div>
     """,
     unsafe_allow_html=True
 )
-with st.expander("🔍 How does the prediction work?"):
+
+
+# ============================================================
+# EXPLANATION
+# ============================================================
+
+with st.expander(
+    "🔍 How does the prediction work?"
+):
+
     st.markdown(
         """
         1. I enter the applicant's details.
@@ -719,7 +1190,8 @@ with st.expander("🔍 How does the prediction work?"):
         3. The processed data is given to the trained XGBoost model.
         4. XGBoost uses patterns learned from previous loan
            applications.
-        5. The model predicts **Approved (Y)** or **Not Approved (N)**.
+        5. The model predicts **Approved (Y)** or
+           **Not Approved (N)**.
         6. The application also displays the model's estimated
            approval probability.
 
@@ -727,11 +1199,14 @@ with st.expander("🔍 How does the prediction work?"):
         """
     )
 
+
 # ============================================================
 # PREDICTION FLOW
 # ============================================================
 
-st.subheader("🔄 Prediction Flow")
+st.subheader(
+    "🔄 Prediction Flow"
+)
 
 
 st.markdown(
@@ -779,8 +1254,11 @@ st.info(
 
 st.markdown("---")
 
+
 st.caption(
     "🏦 Loan Approval Prediction | "
     "Machine Learning with XGBoost | "
-    "Streamlit"
+    "Streamlit | "
+    "Developed by Moulitha | "
+    "© 2026 Moulitha. All Rights Reserved."
 )
