@@ -4,10 +4,7 @@ import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
 
-
-# ============================================================
 # PAGE CONFIGURATION
-# ============================================================
 
 st.set_page_config(
     page_title="Loan Approval Prediction - Moulitha",
@@ -16,26 +13,18 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-
-# ============================================================
 # SESSION STATE
-# ============================================================
 
 if "prediction_history" not in st.session_state:
     st.session_state.prediction_history = []
 
-
-# ============================================================
 # CUSTOM CSS
-# ============================================================
 
 st.markdown(
     """
     <style>
 
-    /* =====================================================
-       MAIN BACKGROUND
-       ===================================================== */
+    /* MAIN BACKGROUND */
 
     .stApp {
         background:
@@ -60,9 +49,7 @@ st.markdown(
     }
 
 
-    /* =====================================================
-       HIDE STREAMLIT MENU
-       ===================================================== */
+    /* HIDE STREAMLIT MENU */
 
     #MainMenu {
         visibility: hidden;
@@ -73,9 +60,7 @@ st.markdown(
     }
 
 
-    /* =====================================================
-       MAIN CONTAINER
-       ===================================================== */
+    /* MAIN CONTAINER */
 
     .block-container {
         padding-top: 2rem;
@@ -84,9 +69,7 @@ st.markdown(
     }
 
 
-    /* =====================================================
-       STREAMLIT HEADINGS
-       ===================================================== */
+    /* STREAMLIT HEADINGS */
 
     h1 {
         font-size: 3.2rem !important;
@@ -105,18 +88,14 @@ st.markdown(
     }
 
 
-    /* =====================================================
-       NORMAL TEXT
-       ===================================================== */
+    /* NORMAL TEXT */
 
     p {
         color: #dcecff;
     }
 
 
-    /* =====================================================
-       INPUT LABELS
-       ===================================================== */
+    /* INPUT LABELS */
 
     label {
         color: white !important;
@@ -124,9 +103,7 @@ st.markdown(
     }
 
 
-    /* =====================================================
-       INPUT BOXES
-       ===================================================== */
+    /* INPUT BOXES */
 
     div[data-baseweb="select"] > div,
     div[data-baseweb="input"] > div,
@@ -144,9 +121,7 @@ st.markdown(
     }
 
 
-    /* =====================================================
-       MODEL SUCCESS BOX
-       ===================================================== */
+    /* MODEL SUCCESS BOX */
 
     .model-success {
         padding: 18px 22px;
@@ -160,9 +135,7 @@ st.markdown(
     }
 
 
-    /* =====================================================
-       PREDICTION CARDS
-       ===================================================== */
+    /* PREDICTION CARDS */
 
     .approved-card {
         padding: 30px;
@@ -198,9 +171,7 @@ st.markdown(
     }
 
 
-    /* =====================================================
-       INFO SECTION
-       ===================================================== */
+    /* INFO SECTION */
 
     .info-card {
         padding: 25px;
@@ -212,9 +183,7 @@ st.markdown(
     }
 
 
-    /* =====================================================
-       FLOW BOX
-       ===================================================== */
+    /* FLOW BOX */
 
     .flow-box {
         padding: 20px;
@@ -230,9 +199,7 @@ st.markdown(
     }
 
 
-    /* =====================================================
-       PREDICTION SUMMARY
-       ===================================================== */
+    /* PREDICTION SUMMARY */
 
     .summary-card {
         padding: 22px;
@@ -258,9 +225,7 @@ st.markdown(
     }
 
 
-    /* =====================================================
-       HISTORY CARD
-       ===================================================== */
+    /* HISTORY CARD */
 
     .history-card {
         padding: 20px;
@@ -271,9 +236,7 @@ st.markdown(
     }
 
 
-    /* =====================================================
-       PREDICT LOAN APPROVAL BUTTON
-       ===================================================== */
+    /* PREDICT LOAN APPROVAL BUTTON */
 
     .stButton > button {
         width: 100%;
@@ -315,9 +278,7 @@ st.markdown(
     }
 
 
-    /* =====================================================
-       FLOATING PARTICLES
-       ===================================================== */
+    /* FLOATING PARTICLES */
 
     .particle {
         position: fixed;
@@ -407,9 +368,7 @@ st.markdown(
     }
 
 
-    /* =====================================================
-       GRID OVERLAY
-       ===================================================== */
+    /* GRID OVERLAY */
 
     .grid-overlay {
         position: fixed;
@@ -450,10 +409,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
-# ============================================================
 # FILE PATHS
-# ============================================================
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -467,10 +423,7 @@ PREPROCESSOR_FILE = os.path.join(
     "preprocessor.pkl"
 )
 
-
-# ============================================================
 # LOAD MODEL AND PREPROCESSOR
-# ============================================================
 
 model = None
 preprocessor = None
@@ -490,10 +443,7 @@ except Exception:
 
     model_loaded = False
 
-
-# ============================================================
 # TOP HEADING
-# ============================================================
 
 st.title(
     "🏦 Loan Approval Prediction — Moulitha"
@@ -504,10 +454,7 @@ st.write(
     "the loan is likely to be approved."
 )
 
-
-# ============================================================
 # MODEL STATUS
-# ============================================================
 
 if model_loaded:
 
@@ -528,10 +475,7 @@ else:
         "preprocessor.pkl are in the same folder as app.py."
     )
 
-
-# ============================================================
 # APPLICANT INFORMATION
-# ============================================================
 
 st.header(
     "👤 Applicant Information"
@@ -576,10 +520,7 @@ with col2:
         ["Urban", "Semiurban", "Rural"]
     )
 
-
-# ============================================================
 # FINANCIAL INFORMATION
-# ============================================================
 
 st.header(
     "💰 Financial Information"
@@ -631,10 +572,7 @@ with col2:
         else "Negative (0)"
     )
 
-
-# ============================================================
 # PREDICTION BUTTON
-# ============================================================
 
 st.markdown("---")
 
@@ -643,10 +581,7 @@ predict_button = st.button(
     "🔮 Predict Loan Approval"
 )
 
-
-# ============================================================
 # PREDICTION
-# ============================================================
 
 if predict_button:
 
@@ -678,27 +613,20 @@ if predict_button:
 
         try:
 
-            # ------------------------------------------------
+            
             # PREPROCESS INPUT
-            # ------------------------------------------------
 
             processed_data = preprocessor.transform(
                 input_data
             )
 
-
-            # ------------------------------------------------
             # MODEL PREDICTION
-            # ------------------------------------------------
 
             prediction = model.predict(
                 processed_data
             )[0]
 
-
-            # ------------------------------------------------
             # PREDICTION PROBABILITY
-            # ------------------------------------------------
 
             probability = None
 
@@ -783,10 +711,7 @@ if predict_button:
                     "unlikely to be approved."
                 )
 
-
-            # ------------------------------------------------
             # SAVE PREDICTION HISTORY
-            # ------------------------------------------------
 
             history_record = {
 
@@ -863,10 +788,7 @@ if predict_button:
                     unsafe_allow_html=True
                 )
 
-
-            # ------------------------------------------------
             # PROBABILITY GAUGE
-            # ------------------------------------------------
 
             if probability is not None:
 
@@ -971,10 +893,7 @@ if predict_button:
                     use_container_width=True
                 )
 
-
-            # ------------------------------------------------
             # APPLICANT SUMMARY
-            # ------------------------------------------------
 
             st.subheader(
                 "📋 Applicant Summary"
@@ -1041,10 +960,7 @@ if predict_button:
                 str(e)
             )
 
-
-# ============================================================
 # PREDICTION HISTORY
-# ============================================================
 
 st.markdown("---")
 
@@ -1106,9 +1022,7 @@ else:
         st.rerun()
 
 
-# ============================================================
 # HOW LOAN PREDICTION WORKS
-# ============================================================
 
 st.markdown("---")
 
@@ -1173,10 +1087,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
-# ============================================================
 # EXPLANATION
-# ============================================================
 
 with st.expander(
     "🔍 How does the prediction work?"
@@ -1200,9 +1111,7 @@ with st.expander(
     )
 
 
-# ============================================================
 # PREDICTION FLOW
-# ============================================================
 
 st.subheader(
     "🔄 Prediction Flow"
@@ -1235,10 +1144,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
-# ============================================================
 # IMPORTANT NOTE
-# ============================================================
 
 st.info(
     "💡 Note: Loan Amount is an input given by the applicant. "
@@ -1247,10 +1153,7 @@ st.info(
     "The model does not predict the Loan Amount."
 )
 
-
-# ============================================================
 # FOOTER
-# ============================================================
 
 st.markdown("---")
 
